@@ -2,4 +2,9 @@
 
 import {execute} from '@oclif/core'
 
-await execute({dir: import.meta.url})
+// Avoid top-level await which can trigger warnings in some environments
+void execute({dir: import.meta.url}).catch((err) => {
+  // eslint-disable-next-line no-console
+  console.error(err);
+  process.exitCode = 1;
+});
