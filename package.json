@@ -1,80 +1,8 @@
 {
-  "name": "matt-code",
-  "description": "An AI-powered, command-line coding assistant",
-  "version": "0.0.0",
-  "author": "Matt Tannahill",
-  "bin": {
-    "matt": "./bin/run.js"
-  },
-  "bugs": "https://github.com/MattTannahill/matt-code/issues",
-  "dependencies": {
-    "@oclif/core": "^4",
-    "@oclif/plugin-help": "^6",
-    "@oclif/plugin-not-found": "^3.2.73",
-    "@oclif/plugin-plugins": "^5",
-    "@types/react": "^19.2.9",
-    "ink": "^6.6.0",
-    "ink-text-input": "^6.0.0",
-    "react": "^19.2.3"
-  },
-  "devDependencies": {
-    "@eslint/compat": "^1",
-    "@oclif/prettier-config": "^0.2.1",
-    "@oclif/test": "^4",
-    "@types/chai": "^4",
-    "@types/mocha": "^10",
-    "@types/node": "^18",
-    "chai": "^4",
-    "eslint": "^9",
-    "eslint-config-oclif": "^6",
-    "eslint-config-prettier": "^10",
-    "mocha": "^10",
-    "oclif": "^4",
-    "shx": "^0.3.3",
-    "ts-node": "^10",
-    "typescript": "^5"
-  },
-  "engines": {
-    "node": ">=18.0.0"
-  },
-  "files": [
-    "./bin",
-    "./dist",
-    "./oclif.manifest.json",
-    "./LICENSE"
+  "workspaces": [
+    "packages/**/*"
   ],
-  "homepage": "https://github.com/MattTannahill/matt-code",
-  "keywords": [
-    "oclif"
-  ],
-  "license": "Apache-2.0",
-  "main": "dist/index.js",
-  "type": "module",
-  "oclif": {
-    "bin": "matt",
-    "dirname": "matt",
-    "commands": "./dist/commands",
-    "plugins": [
-      "@oclif/plugin-help",
-      "@oclif/plugin-plugins",
-      "@oclif/plugin-not-found"
-    ],
-    "topicSeparator": " ",
-    "topics": {
-      "hello": {
-        "description": "Say hello to the world and others"
-      }
-    }
-  },
-  "repository": "MattTannahill/matt-code",
   "scripts": {
-    "build": "shx rm -rf dist && tsc -b",
-    "lint": "eslint",
-    "postpack": "shx rm -f oclif.manifest.json",
-    "posttest": "npm run lint",
-    "prepack": "oclif manifest && oclif readme",
-    "test": "mocha --forbid-only \"test/**/*.test.ts\"",
-    "version": "oclif readme && git add README.md"
-  },
-  "types": "dist/index.d.ts"
+    "build": "npm --workspaces run build --if-present"
+  }
 }
