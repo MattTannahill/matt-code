@@ -15,6 +15,7 @@
     "@types/react": "^19.2.9",
     "ink": "^6.6.0",
     "ink-text-input": "^6.0.0",
+    "openai": "^6.16.0",
     "react": "^19.2.3"
   },
   "devDependencies": {

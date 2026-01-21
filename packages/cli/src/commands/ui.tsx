@@ -1,24 +1,40 @@
 import { Command } from '@oclif/core';
-import React, { useState } from 'react';
-import { render, Box, Text } from 'ink';
+import { Box, render, Text } from 'ink';
 import TextInput from 'ink-text-input';
+import OpenAI from 'openai';
+import React, { useState } from 'react';
+
+const ollama = new OpenAI({
+  apiKey: 'ollama',
+  baseURL: 'http://localhost:11434/v1',
+});
 
 const App = () => {
   const [message, setMessage] = useState('');
-  const [submittedMessage, setSubmittedMessage] = useState('');
+  const [response, setResponse] = useState('');
 
-  const handleSubmit = (value: string) => {
-    setSubmittedMessage(value);
+  const handleSubmit = async (value: string) => {
+    const stream = await ollama.chat.completions.create({
+      messages: [{ content: value, role: 'user' }],
+      model: 'qwen3-coder:30b',
+      stream: true,
+    });
+
+    for await (const chunk of stream) {
+      setResponse(
+        (prev) => prev + (chunk.choices[0]?.delta?.content ?? ''),
+      );
+    }
   };
 
   return (
     <Box>
-      {submittedMessage ? (
-        <Text>You entered: {submittedMessage}</Text>
+      {response ? (
+        <Text>{response}</Text>
       ) : (
         <Box>
           <Text>Enter your message: </Text>
-          <TextInput value={message} onChange={setMessage} onSubmit={handleSubmit} />
+          <TextInput onChange={setMessage} onSubmit={handleSubmit} value={message} />
         </Box>
       )}
     </Box>
