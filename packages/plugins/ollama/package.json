@@ -60,7 +60,7 @@
   },
   "repository": "MattTannahill/matt-code",
   "scripts": {
-    "build": "shx rm -rf dist && tsc -b",
+    "build": "tsc -b",
     "lint": "eslint",
     "postpack": "shx rm -f oclif.manifest.json",
     "posttest": "npm run lint",
