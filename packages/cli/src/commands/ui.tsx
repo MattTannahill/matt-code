@@ -10,8 +10,8 @@ const ollama = new OpenAI({
 });
 
 type ConversationItem = {
-  role: 'user' | 'assistant';
   content: string;
+  role: 'assistant' | 'user';
 };
 
 const App = () => {
@@ -21,7 +21,7 @@ const App = () => {
   const handleSubmit = async (value: string) => {
     const newConversation: ConversationItem[] = [
       ...conversation,
-      { role: 'user', content: value },
+      { content: value, role: 'user' },
     ];
     setConversation(newConversation);
     setMessage('');
@@ -32,12 +32,15 @@ const App = () => {
       stream: true,
     });
 
-    setConversation([...newConversation, { role: 'assistant', content: '' }]);
+    setConversation([...newConversation, { content: '', role: 'assistant' }]);
 
     for await (const chunk of stream) {
       setConversation((prevConversation) => {
-        const lastMessage = prevConversation[prevConversation.length - 1];
-        const updatedLastMessage = {
+        const lastMessage = prevConversation.at(-1);
+        if (!lastMessage) {
+          return prevConversation;
+        }
+        const updatedLastMessage: ConversationItem = {
           ...lastMessage,
           content:
             lastMessage.content + (chunk.choices[0]?.delta?.content ?? ''),
@@ -50,7 +53,7 @@ const App = () => {
   return (
     <Box flexDirection="column">
       {conversation.map((item, index) => (
-        <Box key={index} flexDirection="column" marginBottom={1}>
+        <Box flexDirection="column" key={index} marginBottom={1}>
           <Text bold>{item.role === 'user' ? 'You:' : 'Bot:'}</Text>
           <Text>{item.content}</Text>
         </Box>
