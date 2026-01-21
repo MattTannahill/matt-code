@@ -9,40 +9,66 @@ const ollama = new OpenAI({
   baseURL: 'http://localhost:11434/v1',
 });
 
+type ConversationItem = {
+  role: 'user' | 'assistant';
+  content: string;
+};
+
 const App = () => {
+  const [conversation, setConversation] = useState<ConversationItem[]>([]);
   const [message, setMessage] = useState('');
-  const [response, setResponse] = useState('');
 
   const handleSubmit = async (value: string) => {
+    const newConversation: ConversationItem[] = [
+      ...conversation,
+      { role: 'user', content: value },
+    ];
+    setConversation(newConversation);
+    setMessage('');
+
     const stream = await ollama.chat.completions.create({
-      messages: [{ content: value, role: 'user' }],
+      messages: newConversation,
       model: 'qwen3-coder:30b',
       stream: true,
     });
 
+    setConversation([...newConversation, { role: 'assistant', content: '' }]);
+
     for await (const chunk of stream) {
-      setResponse(
-        (prev) => prev + (chunk.choices[0]?.delta?.content ?? ''),
-      );
+      setConversation((prevConversation) => {
+        const lastMessage = prevConversation[prevConversation.length - 1];
+        const updatedLastMessage = {
+          ...lastMessage,
+          content:
+            lastMessage.content + (chunk.choices[0]?.delta?.content ?? ''),
+        };
+        return [...prevConversation.slice(0, -1), updatedLastMessage];
+      });
     }
   };
 
   return (
-    <Box>
-      {response ? (
-        <Text>{response}</Text>
-      ) : (
-        <Box>
-          <Text>Enter your message: </Text>
-          <TextInput onChange={setMessage} onSubmit={handleSubmit} value={message} />
+    <Box flexDirection="column">
+      {conversation.map((item, index) => (
+        <Box key={index} flexDirection="column" marginBottom={1}>
+          <Text bold>{item.role === 'user' ? 'You:' : 'Bot:'}</Text>
+          <Text>{item.content}</Text>
         </Box>
-      )}
+      ))}
+      <Box>
+        <Text>Enter your message: </Text>
+        <TextInput
+          onChange={setMessage}
+          onSubmit={handleSubmit}
+          value={message}
+        />
+      </Box>
     </Box>
   );
 };
 
 export default class UI extends Command {
-  static override description = 'Open a React Ink UI to ask for a message and echo it back.';
+  static override description = 'Open terminal UI';
 
   public async run(): Promise<void> {
     const { waitUntilExit } = render(<App />);
