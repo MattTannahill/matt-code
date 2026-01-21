@@ -1,13 +1,10 @@
 {
   "compilerOptions": {
     "declaration": true,
-    "module": "Node16",
-    "outDir": "dist",
-    "rootDir": "src",
-    "strict": true,
-    "target": "es2022",
-    "moduleResolution": "node16",
-    "jsx": "react-jsx"
+    "module": "NodeNext",
+    "moduleResolution": "nodenext",
+    "target": "ES2022", // Recommended for modern React/Ink features
+    "jsx": "react-jsx"  // Required for Ink/React components
   },
   "include": ["src/**/*"],
   "ts-node": {
