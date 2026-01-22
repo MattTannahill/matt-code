@@ -37,3 +37,7 @@ npm run build
 ```bash
 npm start
 ```
+
+```bash
+npm start -- ui --api=anthropic
+```

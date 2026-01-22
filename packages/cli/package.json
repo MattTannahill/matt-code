@@ -8,6 +8,7 @@
   },
   "bugs": "https://github.com/MattTannahill/matt-code/issues",
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.71.2",
     "@oclif/core": "^4",
     "@oclif/plugin-help": "^6",
     "@oclif/plugin-not-found": "^3.2.73",
