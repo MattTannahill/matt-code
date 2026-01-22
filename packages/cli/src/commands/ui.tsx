@@ -149,7 +149,7 @@ const App = ({ api }: AppProps) => {
             const lastMessage = prevConversation.at(-1);
             if (
               !lastMessage ||
-              (lastMessage.role !== 'assistant' && lastMessage.role !== 'tool')
+              lastMessage.role !== 'assistant'
             ) {
               return [
                 ...prevConversation,
