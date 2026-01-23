@@ -1,9 +1,14 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { Box, Text } from 'ink';
+import Gradient from 'ink-gradient'
 import TextInput from 'ink-text-input';
 import OpenAI from 'openai';
 import { useState } from 'react';
+import { RED, ORANGE, YELLOW, BLUE } from './colors.js';
 import LS from '../tools/ls.js';
+import packageJson from '../../package.json' with { type: 'json' };
+
+const logoGradient = [YELLOW, YELLOW, ORANGE];
 
 type ToolCall = {
   id: string;
@@ -32,7 +37,7 @@ const tools: OpenAI.Chat.Completions.ChatCompletionTool[] = [
         properties: {
           args: {
             type: 'string',
-            description: 'Arguments to pass to the ls command (e.g., "-la" or a path).',
+            description: "Arguments to pass to the ls command (e.g., '-la' or a path).",
           },
         },
         required: [],
@@ -225,26 +230,55 @@ export const App = ({ api }: AppProps) => {
   };
 
   return (
-    <Box flexDirection="column">
+    <Box flexDirection='column'>
+      <Box marginX={2} marginBottom={1}>
+        <Box flexDirection='column' marginRight={2}>
+          {/* https://en.wikipedia.org/wiki/Block_Elements */}
+          <Gradient colors={logoGradient}><Text>▀█ █       █ █▀</Text></Gradient>
+          <Gradient colors={logoGradient}><Text> █  █     █  █ </Text></Gradient>
+          <Gradient colors={logoGradient}><Text> █   █   █   █ </Text></Gradient>
+          <Gradient colors={logoGradient}><Text>▄█    █ █    █▄</Text></Gradient>
+        </Box>
+        <Box flexDirection='column'>
+          <Text bold color={BLUE}>MATT CODE</Text>
+          <Text bold color={RED}>v{packageJson.version}</Text>
+          {/* <Gradient colors={['#d83520', '#c82473', '#952052']}><Text>v{packageJson.version}</Text></Gradient> */}
+        </Box>
+      </Box>
       {conversation.map((item, index) => (
-        <Box flexDirection="column" key={index} marginBottom={1}>
-          <Text bold>
-            {item.role === 'user'
-              ? 'You:'
-              : item.role === 'tool'
-                ? 'Tool:'
-                : 'Bot:'}
-          </Text>
-          <Text>{item.content}</Text>
+        <Box 
+          key={index} 
+          borderStyle={item.role === 'user' ? 'single' : undefined}
+          borderColor={item.role === 'user' ? BLUE : undefined}  
+          marginBottom={1} 
+          paddingX={1}
+        >
+          <Box width={6}>
+            <Text bold>
+              {item.role === 'user'
+                ? ']\\/['
+                : item.role === 'tool'
+                  ? 'Tool:'
+                  : 'Bot:'}
+            </Text>
+          </Box>
+          <Box>
+            <Text>{item.content}</Text>
+          </Box>
         </Box>
       ))}
-      <Box>
-        <Text>Enter your message: </Text>
-        <TextInput
-          onChange={setMessage}
-          onSubmit={handleSubmit}
-          value={message}
-        />
+      <Box borderStyle='singleDouble' borderColor={YELLOW} paddingX={1}>
+        <Box marginRight={2}>
+          <Text color={YELLOW}>]\/[</Text>
+        </Box>
+        <Box>
+          <TextInput
+            onChange={setMessage}
+            onSubmit={handleSubmit}
+            placeholder='What would you like to do today?'
+            value={message}
+          />
+        </Box>
       </Box>
     </Box>
   );
