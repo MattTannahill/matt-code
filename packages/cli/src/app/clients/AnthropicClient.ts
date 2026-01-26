@@ -1,7 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk';
+
+import { Client } from '../core/Client.js';
+import { ConversationItem } from '../core/ConversationItem.js';
 import { MODEL_NAME } from '../config.js';
-import { Client } from '../api/Client.js';
-import { ConversationItem } from '../api/ConversationItem.js';
+import { Tool } from 'matt-code-api';
 
 export class AnthropicClient implements Client {
   private client: Anthropic;
@@ -18,85 +20,87 @@ export class AnthropicClient implements Client {
     const conversation: ConversationItem[] = [];
     for (const message of this.messages) {
       if (!message) continue;
-      const role = message.role;
-      const content = message.content;
+      const {role} = message;
+      const {content} = message;
 
       if (role === 'user') {
         if (typeof content === 'string') {
-          conversation.push({ role: 'user', content });
+          conversation.push({ content, role: 'user' });
         } else if (Array.isArray(content)) {
           // tool results
           conversation.push({
-            role: 'tool',
             content: (content as Anthropic.ToolResultBlockParam[])
               .map(c => `Tool output for ${c.tool_use_id}:\n${c.content}`)
               .join('\n\n'),
+            role: 'tool',
           });
         }
       } else if (role === 'assistant') {
         if (typeof content === 'string') {
-          conversation.push({ role: 'assistant', content });
+          conversation.push({ content, role: 'assistant' });
         } else if (Array.isArray(content)) {
           const textPart = content.find(p => p.type === 'text');
           if (textPart) {
-            conversation.push({ role: 'assistant', content: textPart.text });
+            conversation.push({ content: textPart.text, role: 'assistant' });
           }
+
           const toolParts = content.filter(p => p.type === 'tool_use');
           if (toolParts.length > 0) {
             conversation.push({
-              role: 'assistant',
               content: toolParts
                 .map(p => `Using tool: ${p.name}(${p.input})`)
                 .join('\n'),
+              role: 'assistant',
             });
           }
         } else {
           // null content during streaming
-          conversation.push({ role: 'assistant', content: '' });
+          conversation.push({ content: '', role: 'assistant' });
         }
       }
     }
+
     return conversation;
   }
 
   async run(
     userMessage: string,
-    tools: any[],
+    tools: Tool[],
     callbacks: {
-      onUpdate: () => void;
       executeTool: (name: string, args: string) => Promise<string>;
+      onUpdate: () => void;
     },
   ): Promise<void> {
-    this.messages.push({ role: 'user', content: userMessage });
+    this.messages.push({ content: userMessage, role: 'user' });
     callbacks.onUpdate();
 
     while (true) {
       const stream = await this.client.messages.create({
+        max_tokens: 1024,
         messages: this.messages,
         model: MODEL_NAME,
-        max_tokens: 1024,
         stream: true,
         tools: tools.map(tool => ({
-          name: tool.toolName,
           description: tool.description,
           input_schema: {
             ...tool.parameters,
             type: 'object' as const,
           },
+          name: tool.name,
         })),
       });
 
       const assistantMessage: Anthropic.MessageParam = {
-        role: 'assistant',
         content: null,
+        role: 'assistant',
       };
       this.messages.push(assistantMessage);
       callbacks.onUpdate();
 
       let textContent = '';
-      const toolUses: { id: string; name: string; input: string; type: 'tool_use' }[] = 
+      const toolUses: { id: string; input: string; name: string; type: 'tool_use' }[] = 
         [];
-      let currentToolCall: { index: number; arguments: string } | null = null;
+      let currentToolCall: null | { arguments: string; index: number; } = null;
 
       for await (const event of stream as any) {
         if (
@@ -105,12 +109,12 @@ export class AnthropicClient implements Client {
         ) {
           const toolUse = {
             id: event.content_block.id,
-            type: 'tool_use' as const,
-            name: event.content_block.name,
             input: '',
+            name: event.content_block.name,
+            type: 'tool_use' as const,
           };
           toolUses.push(toolUse);
-          currentToolCall = { index: toolUses.length - 1, arguments: '' };
+          currentToolCall = { arguments: '', index: toolUses.length - 1 };
         } else if (event.type === 'content_block_delta') {
           if (
             event.delta.type === 'input_json_delta' &&
@@ -126,10 +130,10 @@ export class AnthropicClient implements Client {
         }
 
         const contentParts: (
-          | { type: 'text'; text: string }
-          | { id: string; name: string; input: string; type: 'tool_use' }
+          | { id: string; input: string; name: string; type: 'tool_use' }
+          | { text: string; type: 'text'; }
         )[] = [];
-        if (textContent) contentParts.push({ type: 'text', text: textContent });
+        if (textContent) contentParts.push({ text: textContent, type: 'text' });
         contentParts.push(...toolUses);
 
         if (contentParts.length === 0) {
@@ -139,6 +143,7 @@ export class AnthropicClient implements Client {
         } else {
           assistantMessage.content = contentParts;
         }
+
         callbacks.onUpdate();
       }
 
@@ -150,15 +155,15 @@ export class AnthropicClient implements Client {
               toolCall.input,
             );
             return {
-              type: 'tool_result' as const,
-              tool_use_id: toolCall.id,
               content: toolOutput,
+              tool_use_id: toolCall.id,
+              type: 'tool_result' as const,
             };
           }),
         );
         this.messages.push({
-          role: 'user',
           content: toolResponseContents,
+          role: 'user',
         });
         callbacks.onUpdate();
         // and loop...

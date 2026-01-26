@@ -6,6 +6,10 @@
     "target": "ES2022", // Recommended for modern React/Ink features
     "jsx": "react-jsx"  // Required for Ink/React components
   },
+  "references": [
+    { "path": "./packages/api" },
+    { "path": "./packages/cli" }
+  ],
   "include": ["src/**/*"],
   "ts-node": {
     "esm": true

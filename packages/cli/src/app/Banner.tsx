@@ -1,7 +1,8 @@
 import { Box, Text } from 'ink';
 import Gradient from 'ink-gradient';
 import React from 'react';
-import { RED, ORANGE, YELLOW, BLUE } from './colors.js';
+
+import { BLUE, ORANGE, RED, YELLOW } from './colors.js';
 
 type BannerProps = {
   packageVersion: string;
@@ -10,7 +11,7 @@ type BannerProps = {
 const logoGradient = [YELLOW, YELLOW, ORANGE];
 
 export const Banner: React.FC<BannerProps> = ({ packageVersion }) => (
-  <Box marginX={2} marginBottom={1}>
+  <Box marginBottom={1} marginX={2}>
     <Box flexDirection='column' marginRight={2}>
       {/* https://en.wikipedia.org/wiki/Block_Elements */}
       <Gradient colors={logoGradient}><Text>▀█ █       █ █▀</Text></Gradient>

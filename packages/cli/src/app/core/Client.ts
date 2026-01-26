@@ -1,13 +1,14 @@
+import { Tool } from 'matt-code-api';
 import { ConversationItem } from './ConversationItem.js';
 
 export interface Client {
   getConversation(): ConversationItem[];
   run(
     userMessage: string,
-    tools: any[],
+    tools: Tool[],
     callbacks: {
-      onUpdate: () => void;
       executeTool: (name: string, args: string) => Promise<string>;
+      onUpdate: () => void;
     },
   ): Promise<void>;
 }

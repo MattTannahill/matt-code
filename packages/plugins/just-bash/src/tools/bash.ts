@@ -2,8 +2,18 @@
 import { Bash, MountableFs, ReadWriteFs } from 'just-bash';
 
 const BashTool = {
-  toolName: 'bash',
+  name: 'bash',
   description: 'Execute bash commands.',
+  parameters: {
+    type: 'object' as const,
+    properties: {
+      command: {
+        type: 'string',
+        description: 'The bash command to execute.',
+      },
+    },
+    required: ['command'],
+  },
   run: async (command: string): Promise<string> => {
     console.log(`[bash.ts] host process.cwd(): ${process.cwd()}`);
     console.log(`[bash.ts] command: ${command}`);

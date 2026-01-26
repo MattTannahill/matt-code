@@ -19,7 +19,8 @@
     "ink-text-input": "^6.0.0",
     "openai": "^6.16.0",
     "react": "^19.2.3",
-    "just-bash": "^2.6.0"
+    "matt-code-api": "0.0.0",
+    "matt-code-just-bash": "file:../plugins/matt-code-just-bash"
   },
   "devDependencies": {
     "@eslint/compat": "^1",
@@ -61,7 +62,8 @@
     "plugins": [
       "@oclif/plugin-help",
       "@oclif/plugin-plugins",
-      "@oclif/plugin-not-found"
+      "@oclif/plugin-not-found",
+      "matt-code-just-bash"
     ],
     "topicSeparator": " ",
     "topics": {
