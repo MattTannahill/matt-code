@@ -58,7 +58,7 @@ export const App = ({ api: apiProp }: AppProps) => {
       {conversation.map((item, index) => (
         <Box 
           key={index} 
-          borderStyle={item.role === 'user' ? 'single' : undefined}
+          borderStyle={item.role === 'user' ? 'singleDouble' : undefined}
           borderColor={item.role === 'user' ? BLUE : undefined}  
           marginBottom={1} 
           paddingX={1}
