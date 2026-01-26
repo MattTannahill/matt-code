@@ -18,7 +18,8 @@
     "ink-gradient": "^3.0.0",
     "ink-text-input": "^6.0.0",
     "openai": "^6.16.0",
-    "react": "^19.2.3"
+    "react": "^19.2.3",
+    "just-bash": "^2.6.0"
   },
   "devDependencies": {
     "@eslint/compat": "^1",

@@ -15,7 +15,7 @@ export default class UI extends Command {
 
   public async run(): Promise<void> {
     const { flags } = await this.parse(UI);
-    const { waitUntilExit } = render(<App api={flags.api} />);
+    const { waitUntilExit } = render(<App api={flags.api as 'openai' | 'anthropic'} />);
     return waitUntilExit();
   }
 }
