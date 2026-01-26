@@ -54,3 +54,9 @@ npm start
 ```bash
 npm start -- ui --api=anthropic
 ```
+
+## Acknowlegements
+
+The [Gemini CLI](https://github.com/google-gemini/gemini-cli) has been used as both a reference while writing Matt Code as well as a tool to help write Matt Code.  Many thanks to Google for making this project open source and for providing a free tier.
+
+If you find yourself inspired by the ideas in the project, an attribution to this project would be much appreciated.
