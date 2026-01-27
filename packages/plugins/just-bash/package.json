@@ -3,9 +3,6 @@
   "description": "Interact with a bash shell from Matt Code",
   "version": "0.0.0",
   "author": "Matt Tannahill",
-  "bin": {
-    "matt-code-just-bash": "./bin/run.js"
-  },
   "bugs": "https://github.com/MattTannahill/matt-code/issues",
   "dependencies": {
     "@oclif/core": "^4",
@@ -34,18 +31,16 @@
   "engines": {
     "node": ">=18.0.0"
   },
+  "exports": "./dist/index.js",
   "files": [
-    "./bin",
-    "./dist",
-    "./oclif.manifest.json"
+    "./oclif.manifest.json",
+    "./dist"
   ],
   "homepage": "https://github.com/MattTannahill/matt-code",
   "keywords": [
-    "oclif"
+    "oclif-plugin"
   ],
   "license": "Apache-2.0",
-  "main": "dist/index.js",
-  "type": "module",
   "oclif": {
     "bin": "matt-code-just-bash",
     "dirname": "matt-code-just-bash",
@@ -63,6 +58,7 @@
   "repository": "MattTannahill/matt-code",
   "scripts": {
     "build": "tsc -b",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "lint": "eslint",
     "postpack": "shx rm -f oclif.manifest.json",
     "posttest": "npm run lint",
@@ -70,5 +66,6 @@
     "test": "mocha --forbid-only \"test/**/*.test.ts\"",
     "version": "oclif readme && git add README.md"
   },
+  "type": "module",
   "types": "dist/index.d.ts"
 }

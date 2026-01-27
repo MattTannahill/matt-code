@@ -6,6 +6,7 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "build": "tsc -b",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "lint": "eslint"
   },
   "devDependencies": {

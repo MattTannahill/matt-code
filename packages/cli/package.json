@@ -76,6 +76,7 @@
   "scripts": {
     "start": "bin/run.js",
     "build": "tsc -b",
+    "clean": "rm -rf dist tsconfig.tsbuildinfo",
     "lint": "eslint",
     "postpack": "shx rm -f oclif.manifest.json",
     "posttest": "npm run lint",

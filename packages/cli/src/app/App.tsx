@@ -1,9 +1,10 @@
 import {Config} from '@oclif/core'
 import { Box, Text } from 'ink';
 import TextInput from 'ink-text-input';
+import path from 'node:path';
+import { pathToFileURL } from 'node:url';
 import { useEffect, useState } from 'react';
 import { Tool, ToolProvider } from 'matt-code-api';
-
 import packageJson from '../../package.json' with { type: 'json' };
 import { Banner } from './Banner.js';
 import { AnthropicClient } from './clients/AnthropicClient.js';
@@ -25,7 +26,10 @@ export const App = ({ api: apiProp, config }: AppProps) => {
       const allTools: Tool[] = [];
       for (const plugin of config.plugins.values()) {
         try {
-          const imported = await import(plugin.name);
+          const relativeEntryPoint = plugin.pjson.main || plugin.pjson.exports
+          const entryPoint = path.resolve(plugin.root, relativeEntryPoint);
+          const url = pathToFileURL(entryPoint);
+          const imported = await import(url.href);
           if (imported.toolProvider) {
             const provider = imported.toolProvider as ToolProvider;
             const pluginTools = await provider.fetch();

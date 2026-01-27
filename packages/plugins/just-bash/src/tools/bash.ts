@@ -15,12 +15,9 @@ const BashTool = {
     required: ['command'],
   },
   run: async (command: string): Promise<string> => {
-    console.log(`[bash.ts] host process.cwd(): ${process.cwd()}`);
-    console.log(`[bash.ts] command: ${command}`);
-
     const mountableFs = new MountableFs();
 
-    const hostFs = new ReadWriteFs({ root: process.cwd() });
+    const hostFs = new ReadWriteFs({ root: process.env.INIT_CWD });
     mountableFs.mount('/home/user/project', hostFs);
 
     const bash = new Bash({ fs: mountableFs, cwd: '/home/user/project' });

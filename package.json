@@ -6,6 +6,7 @@
   "scripts": {
     "start": "npm --workspace=packages/cli run start",
     "build": "npm --workspaces run build --if-present",
+    "clean": "npm --workspaces run clean --if-present",
     "lint": "npm --workspaces run lint --if-present"
   }
 }
