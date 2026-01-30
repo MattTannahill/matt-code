@@ -65,12 +65,7 @@
       "@oclif/plugin-not-found",
       "matt-code-just-bash"
     ],
-    "topicSeparator": " ",
-    "topics": {
-      "hello": {
-        "description": "Say hello to the world and others"
-      }
-    }
+    "topicSeparator": " "
   },
   "repository": "MattTannahill/matt-code",
   "scripts": {

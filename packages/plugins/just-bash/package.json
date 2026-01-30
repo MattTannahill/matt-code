@@ -31,29 +31,24 @@
   "engines": {
     "node": ">=18.0.0"
   },
-  "exports": "./dist/index.js",
+  "exports": "./lib/index.js",
   "files": [
-    "./oclif.manifest.json",
-    "./dist"
+    "./lib",
+    "./oclif.manifest.json"
   ],
   "homepage": "https://github.com/MattTannahill/matt-code",
   "keywords": [
     "oclif-plugin"
   ],
   "license": "Apache-2.0",
+  "type": "module",
   "oclif": {
-    "bin": "matt-code-just-bash",
-    "dirname": "matt-code-just-bash",
-    "commands": "./dist/commands",
+    "bin": "matt",
+    "commands": "./lib/commands",
     "plugins": [
       "@oclif/plugin-help"
     ],
-    "topicSeparator": " ",
-    "topics": {
-      "hello": {
-        "description": "Say hello to the world and others"
-      }
-    }
+    "topicSeparator": " "
   },
   "repository": "MattTannahill/matt-code",
   "scripts": {
@@ -66,6 +61,5 @@
     "test": "mocha --forbid-only \"test/**/*.test.ts\"",
     "version": "oclif readme && git add README.md"
   },
-  "type": "module",
-  "types": "dist/index.d.ts"
+  "types": "./lib/index.d.ts"
 }
