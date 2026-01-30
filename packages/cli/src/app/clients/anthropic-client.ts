@@ -1,9 +1,9 @@
 import Anthropic from '@anthropic-ai/sdk';
-
-import { Client } from '../core/Client.js';
-import { ConversationItem } from '../core/ConversationItem.js';
-import { MODEL_NAME } from '../config.js';
 import { Tool } from 'matt-code-api';
+
+import { MODEL_NAME } from '../config.js';
+import { Client } from '../core/client.js';
+import { ConversationItem } from '../core/conversation-item.js';
 
 export class AnthropicClient implements Client {
   private client: Anthropic;
@@ -30,6 +30,7 @@ export class AnthropicClient implements Client {
           // tool results
           conversation.push({
             content: (content as Anthropic.ToolResultBlockParam[])
+               
               .map(c => `Tool output for ${c.tool_use_id}:\n${c.content}`)
               .join('\n\n'),
             role: 'tool',
@@ -74,8 +75,10 @@ export class AnthropicClient implements Client {
     this.messages.push({ content: userMessage, role: 'user' });
     callbacks.onUpdate();
 
+    /* eslint-disable no-await-in-loop */
     while (true) {
       const stream = await this.client.messages.create({
+        /* eslint-disable camelcase */
         max_tokens: 1024,
         messages: this.messages,
         model: MODEL_NAME,
@@ -88,6 +91,7 @@ export class AnthropicClient implements Client {
           },
           name: tool.name,
         })),
+        /* eslint-enable camelcase */
       });
 
       const assistantMessage: Anthropic.MessageParam = {
@@ -102,7 +106,7 @@ export class AnthropicClient implements Client {
         [];
       let currentToolCall: null | { arguments: string; index: number; } = null;
 
-      for await (const event of stream as any) {
+      for await (const event of stream) {
         if (
           event.type === 'content_block_start' &&
           event.content_block.type === 'tool_use'
@@ -156,6 +160,7 @@ export class AnthropicClient implements Client {
             );
             return {
               content: toolOutput,
+              /* eslint-disable-next-line camelcase */
               tool_use_id: toolCall.id,
               type: 'tool_result' as const,
             };

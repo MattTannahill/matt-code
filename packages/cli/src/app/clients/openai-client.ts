@@ -1,9 +1,9 @@
+import { Tool } from 'matt-code-api';
 import OpenAI from 'openai';
 
-import { Client } from '../core/Client.js';
-import { ConversationItem } from '../core/ConversationItem.js';
 import { MODEL_NAME } from '../config.js';
-import { Tool } from 'matt-code-api';
+import { Client } from '../core/client.js';
+import { ConversationItem } from '../core/conversation-item.js';
 
 export class OpenAIClient implements Client {
   private client: OpenAI;
@@ -33,6 +33,7 @@ export class OpenAIClient implements Client {
 
         content = content || '';
 
+         
         if (message.tool_calls) {
           const toolCallContent = message.tool_calls
             .map(tc => {
@@ -49,6 +50,7 @@ export class OpenAIClient implements Client {
             content = toolCallContent;
           }
         }
+         
 
         conversation.push({ content, role: 'assistant' });
       
@@ -57,6 +59,7 @@ export class OpenAIClient implements Client {
 
       case 'tool': {
         conversation.push({
+           
           content: `Tool output for ${message.tool_call_id}:\n${message.content}`,
           role: 'tool',
         });
@@ -87,11 +90,13 @@ export class OpenAIClient implements Client {
     this.messages.push({ content: userMessage, role: 'user' });
     callbacks.onUpdate();
 
+    /* eslint-disable no-await-in-loop */
     while (true) {
       const stream = await this.client.chat.completions.create({
         messages: this.messages,
         model: MODEL_NAME,
         stream: true,
+        /* eslint-disable-next-line camelcase */
         tool_choice: 'auto',
         tools: tools.map(tool => ({
           function: {
@@ -109,12 +114,12 @@ export class OpenAIClient implements Client {
       callbacks.onUpdate();
 
       let textContent = '';
-      const tempToolCalls: {
+      const toolCallStreams: {
         function: { arguments: string; name?: string; };
         id?: string;
       }[] = [];
 
-      for await (const chunk of stream as any) {
+      for await (const chunk of stream) {
         const delta = chunk.choices[0]?.delta;
 
         if (delta?.content) {
@@ -124,31 +129,10 @@ export class OpenAIClient implements Client {
 
         if (delta?.tool_calls) {
           assistantMessage.content = textContent;
-          for (const newToolCall of delta.tool_calls) {
-            if (newToolCall.index !== undefined) {
-              if (!tempToolCalls[newToolCall.index]) {
-                tempToolCalls[newToolCall.index] = {
-                  function: { arguments: '' },
-                };
-              }
+          this.updateToolCallStreams(toolCallStreams, delta.tool_calls);
 
-              if (newToolCall.id) {
-                tempToolCalls[newToolCall.index].id = newToolCall.id;
-              }
-
-              if (newToolCall.function?.name) {
-                tempToolCalls[newToolCall.index].function.name =
-                  newToolCall.function.name;
-              }
-
-              if (newToolCall.function?.arguments) {
-                tempToolCalls[newToolCall.index].function.arguments +=
-                  newToolCall.function.arguments;
-              }
-            }
-          }
-
-          assistantMessage.tool_calls = tempToolCalls.map(tc => ({
+          /* eslint-disable-next-line camelcase */
+          assistantMessage.tool_calls = toolCallStreams.map(tc => ({
             function: {
               arguments: tc.function.arguments,
               name: tc.function.name!,
@@ -161,7 +145,7 @@ export class OpenAIClient implements Client {
         callbacks.onUpdate();
       }
 
-      const finalToolCalls = tempToolCalls.map(tc => ({
+      const finalToolCalls = toolCallStreams.map(tc => ({
         function: {
           arguments: tc.function.arguments,
           name: tc.function.name!,
@@ -180,6 +164,7 @@ export class OpenAIClient implements Client {
             return {
               content,
               role: 'tool' as const,
+              /* eslint-disable-next-line camelcase */
               tool_call_id: toolCall.id,
             };
           }),
@@ -190,6 +175,37 @@ export class OpenAIClient implements Client {
       } else {
         // No more tool calls, so we can exit the loop
         break;
+      }
+    }
+  }
+
+  private updateToolCallStreams(
+    toolCallStreams: {
+      function: { arguments: string; name?: string; };
+      id?: string;
+    }[],
+    newToolCalls: OpenAI.Chat.Completions.ChatCompletionChunk.Choice.Delta.ToolCall[],
+  ) {
+    for (const newToolCall of newToolCalls) {
+      const { index } = newToolCall;
+      if (index === undefined) continue;
+
+      if (!toolCallStreams[index]) {
+        toolCallStreams[index] = {
+          function: { arguments: '' },
+        };
+      }
+
+      if (newToolCall.id) {
+        toolCallStreams[index].id = newToolCall.id;
+      }
+
+      if (newToolCall.function?.name) {
+        toolCallStreams[index].function.name = newToolCall.function.name;
+      }
+
+      if (newToolCall.function?.arguments) {
+        toolCallStreams[index].function.arguments += newToolCall.function.arguments;
       }
     }
   }

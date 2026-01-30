@@ -1,16 +1,17 @@
 import {Config} from '@oclif/core'
 import { Box, Text } from 'ink';
 import TextInput from 'ink-text-input';
+import { Tool, ToolProvider } from 'matt-code-api';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { useEffect, useState } from 'react';
-import { Tool, ToolProvider } from 'matt-code-api';
+
 import packageJson from '../../package.json' with { type: 'json' };
 import { Banner } from './Banner.js';
-import { AnthropicClient } from './clients/AnthropicClient.js';
-import { OpenAIClient } from './clients/OpenAIClient.js';
+import { AnthropicClient } from './clients/anthropic-client.js';
+import { OpenAIClient } from './clients/openai-client.js';
 import { BLUE, YELLOW } from './colors.js';
-import { Client } from './core/Client.js';
+import { Client } from './core/client.js';
 
 type AppProps = {
   api?: 'anthropic' | 'openai';
@@ -23,23 +24,29 @@ export const App = ({ api: apiProp, config }: AppProps) => {
 
   useEffect(() => {
     const loadTools = async () => {
-      const allTools: Tool[] = [];
-      for (const plugin of config.plugins.values()) {
+      const toolPromises = [...config.plugins.values()].map(async (plugin) => {
         try {
-          const relativeEntryPoint = plugin.pjson.main || plugin.pjson.exports
+          const relativeEntryPoint = plugin.pjson.main || plugin.pjson.exports;
+          if (!relativeEntryPoint) {
+            return [];
+          }
+
           const entryPoint = path.resolve(plugin.root, relativeEntryPoint);
           const url = pathToFileURL(entryPoint);
           const imported = await import(url.href);
           if (imported.toolProvider) {
             const provider = imported.toolProvider as ToolProvider;
-            const pluginTools = await provider.fetch();
-            allTools.push(...pluginTools);
+            return await provider.fetch();
           }
         } catch (error) {
           console.error(`Error loading plugin ${plugin.name}:`, error);
         }
-      }
-      setTools(allTools);
+
+        return [];
+      });
+
+      const pluginTools = await Promise.all(toolPromises);
+      setTools(pluginTools.flat());
     };
 
     loadTools();

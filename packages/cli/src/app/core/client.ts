@@ -1,5 +1,6 @@
 import { Tool } from 'matt-code-api';
-import { ConversationItem } from './ConversationItem.js';
+
+import { ConversationItem } from './conversation-item.js';
 
 export interface Client {
   getConversation(): ConversationItem[];
