@@ -44,7 +44,6 @@
   "type": "module",
   "oclif": {
     "bin": "matt",
-    "commands": "./lib/commands",
     "plugins": [
       "@oclif/plugin-help"
     ],

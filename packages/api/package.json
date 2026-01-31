@@ -10,9 +10,12 @@
     "lint": "eslint"
   },
   "devDependencies": {
-    "typescript": "^5.9.3",
-    "eslint": "^8.56.0",
     "@typescript-eslint/eslint-plugin": "^6.0.0",
-    "@typescript-eslint/parser": "^6.0.0"
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.56.0",
+    "typescript": "^5.9.3"
+  },
+  "dependencies": {
+    "zod": "^4.3.6"
   }
 }

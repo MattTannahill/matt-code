@@ -1,19 +1,14 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { Tool } from 'matt-code-api';
+import { Client, ConversationItem, Tool } from 'matt-code-api';
 
-import { MODEL_NAME } from '../config.js';
-import { Client } from '../core/client.js';
-import { ConversationItem } from '../core/conversation-item.js';
+const MODEL_NAME = 'qwen3-coder:30b';
 
 export class AnthropicClient implements Client {
   private client: Anthropic;
   private messages: Anthropic.MessageParam[] = [];
 
-  constructor() {
-    this.client = new Anthropic({
-      apiKey: 'ollama',
-      baseURL: 'http://localhost:11434/v1',
-    });
+  constructor(options: Record<string, any> = {}) {
+    this.client = new Anthropic(options);
   }
 
   getConversation(): ConversationItem[] {
@@ -30,7 +25,7 @@ export class AnthropicClient implements Client {
           // tool results
           conversation.push({
             content: (content as Anthropic.ToolResultBlockParam[])
-               
+              /* eslint-disable-next-line camelcase */
               .map(c => `Tool output for ${c.tool_use_id}:\n${c.content}`)
               .join('\n\n'),
             role: 'tool',
@@ -49,7 +44,7 @@ export class AnthropicClient implements Client {
           if (toolParts.length > 0) {
             conversation.push({
               content: toolParts
-                .map(p => `Using tool: ${p.name}(${p.input})`)
+                .map(p => `Using tool: ${p.name}(${JSON.stringify(p.input)})`)
                 .join('\n'),
               role: 'assistant',
             });
@@ -135,7 +130,7 @@ export class AnthropicClient implements Client {
 
         const contentParts: (
           | { id: string; input: string; name: string; type: 'tool_use' }
-          | { text: string; type: 'text'; }
+          | { text: string; type: 'text'; } 
         )[] = [];
         if (textContent) contentParts.push({ text: textContent, type: 'text' });
         contentParts.push(...toolUses);

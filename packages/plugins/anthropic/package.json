@@ -1,0 +1,39 @@
+{
+  "name": "matt-code-anthropic",
+  "description": "Anthropic client plugin for Matt Code",
+  "version": "0.0.0",
+  "author": "Matt Tannahill",
+  "dependencies": {
+    "@anthropic-ai/sdk": "^0.72.1",
+    "matt-code-api": "0.0.0",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "oclif": "^4",
+    "shx": "^0.3.3",
+    "typescript": "^5.9.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "exports": "./lib/index.js",
+  "files": [
+    "./lib",
+    "./oclif.manifest.json"
+  ],
+  "license": "Apache-2.0",
+  "type": "module",
+  "oclif": {
+    "bin": "matt",
+    "dirname": "matt",
+    "topicSeparator": " "
+  },
+  "repository": "MattTannahill/matt-code",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rm -rf lib tsconfig.tsbuildinfo",
+    "postpack": "shx rm -f oclif.manifest.json",
+    "prepack": "oclif manifest && oclif readme"
+  },
+  "types": "./lib/index.d.ts"
+}

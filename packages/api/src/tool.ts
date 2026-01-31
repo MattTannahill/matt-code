@@ -4,5 +4,5 @@ export interface Tool {
   name: string;
   description: string;
   parameters: ToolParameters;
-  run: (command: string) => Promise<string>;
+  run: (args: any) => Promise<string>;
 }

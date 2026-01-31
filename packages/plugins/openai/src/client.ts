@@ -1,19 +1,14 @@
-import { Tool } from 'matt-code-api';
+import { Client, ConversationItem, Tool } from 'matt-code-api';
 import OpenAI from 'openai';
 
-import { MODEL_NAME } from '../config.js';
-import { Client } from '../core/client.js';
-import { ConversationItem } from '../core/conversation-item.js';
+const MODEL_NAME = 'qwen3-coder:30b';
 
 export class OpenAIClient implements Client {
   private client: OpenAI;
   private messages: OpenAI.Chat.Completions.ChatCompletionMessageParam[] = [];
 
-  constructor() {
-    this.client = new OpenAI({
-      apiKey: 'ollama',
-      baseURL: 'http://localhost:11434/v1',
-    });
+  constructor(options: Record<string, any> = {}) {
+    this.client = new OpenAI(options);
   }
 
   getConversation(): ConversationItem[] {
@@ -33,7 +28,7 @@ export class OpenAIClient implements Client {
 
         content = content || '';
 
-         
+        /* eslint-disable camelcase */
         if (message.tool_calls) {
           const toolCallContent = message.tool_calls
             .map(tc => {
@@ -50,7 +45,7 @@ export class OpenAIClient implements Client {
             content = toolCallContent;
           }
         }
-         
+        /* eslint-enable camelcase */
 
         conversation.push({ content, role: 'assistant' });
       
@@ -59,7 +54,7 @@ export class OpenAIClient implements Client {
 
       case 'tool': {
         conversation.push({
-           
+          /* eslint-disable camelcase */
           content: `Tool output for ${message.tool_call_id}:\n${message.content}`,
           role: 'tool',
         });

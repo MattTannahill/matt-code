@@ -8,19 +8,19 @@
   },
   "bugs": "https://github.com/MattTannahill/matt-code/issues",
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.71.2",
     "@oclif/core": "^4",
     "@oclif/plugin-help": "^6",
     "@oclif/plugin-not-found": "^3.2.73",
     "@oclif/plugin-plugins": "^5",
+    "@oclif/table": "^0.5.2",
     "@types/react": "^19.2.9",
     "ink": "^6.6.0",
     "ink-gradient": "^3.0.0",
     "ink-text-input": "^6.0.0",
-    "openai": "^6.16.0",
-    "react": "^19.2.3",
     "matt-code-api": "0.0.0",
-    "matt-code-just-bash": "file:../plugins/matt-code-just-bash"
+    "matt-code-just-bash": "0.0.0",
+    "matt-code-openai": "0.0.0",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@eslint/compat": "^1",
@@ -36,7 +36,7 @@
     "mocha": "^10",
     "oclif": "^4",
     "shx": "^0.3.3",
-    "ts-node": "^10",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   },
   "engines": {
@@ -63,8 +63,14 @@
       "@oclif/plugin-help",
       "@oclif/plugin-plugins",
       "@oclif/plugin-not-found",
-      "matt-code-just-bash"
+      "matt-code-just-bash",
+      "matt-code-openai"
     ],
+    "topics": {
+      "clients": {
+        "description": "Manage client configurations"
+      }
+    },
     "topicSeparator": " "
   },
   "repository": "MattTannahill/matt-code",

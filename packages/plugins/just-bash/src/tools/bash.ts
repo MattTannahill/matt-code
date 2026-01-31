@@ -14,7 +14,7 @@ const BashTool = {
     required: ['command'],
     type: 'object' as const,
   },
-  async run(command: string): Promise<string> {
+  async run({ command }: { command: string }): Promise<string> {
     const mountableFs = new MountableFs();
 
     const hostFs = new ReadWriteFs({ root: process.env.INIT_CWD });
