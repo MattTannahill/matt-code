@@ -7,7 +7,7 @@ import {
 } from '@google/genai';
 import { Client, ConversationItem, Tool } from 'matt-code-api';
 
-const MODEL_NAME = 'gemini-3-flash-preview';
+const MODEL_NAME = 'gemini-2.5-flash';
 
 export class GoogleGenAIClient implements Client {
   private client: GoogleGenAI;
@@ -80,7 +80,7 @@ export class GoogleGenAIClient implements Client {
       });
 
       let text = '';
-      let functionCall: { name: string; args: any } | undefined;
+      let functionCall: any | undefined;
 
       // Temporary placeholder for streaming updates
       const tempHistoryItemIndex = this.history.length;
@@ -100,10 +100,7 @@ export class GoogleGenAIClient implements Client {
 
         const functionCalls = chunk.functionCalls;
         if (functionCalls && functionCalls.length > 0) {
-          functionCall = {
-            name: functionCalls[0].name || '',
-            args: functionCalls[0].args,
-          };
+          functionCall = functionCalls[0];
         }
       }
 
@@ -113,7 +110,7 @@ export class GoogleGenAIClient implements Client {
       if (functionCall) {
         this.history.push({
           role: 'model',
-          parts: [{ functionCall: { name: functionCall.name, args: functionCall.args } }],
+          parts: [{ functionCall: functionCall }],
         });
         callbacks.onUpdate();
 
