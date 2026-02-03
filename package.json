@@ -1,4 +1,5 @@
 {
+  "name": "matt-code-workspace",
   "type": "module",
   "workspaces": [
     "packages/**/*"

@@ -38,8 +38,8 @@ export default class ClientsCreate extends Command {
     let module
     try {
       module = await import(plugin.name)
-    } catch {
-      this.error(`Could not load plugin '${pluginName}'`)
+    } catch (error: unknown) {
+      this.error(`Could not load plugin '${pluginName}': ${error}`)
     }
 
     const provider = module.default
