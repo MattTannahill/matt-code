@@ -87,20 +87,20 @@ export class GoogleGenAIClient implements Client {
       this.history.push({ role: 'model', parts: [{ text: '' }] });
 
       for await (const chunk of resultStream) {
-        const chunkText = chunk.text;
-        if (chunkText) {
-          text += chunkText;
-          // Update the last item in history for real-time feedback
-          this.history[tempHistoryItemIndex] = {
-            role: 'model',
-            parts: [{ text }],
-          };
-          callbacks.onUpdate();
-        }
-
         const functionCalls = chunk.functionCalls;
         if (functionCalls && functionCalls.length > 0) {
           functionCall = functionCalls[0];
+        } else {
+          const chunkText = chunk.text;
+          if (chunkText) {
+            text += chunkText;
+            // Update the last item in history for real-time feedback
+            this.history[tempHistoryItemIndex] = {
+              role: 'model',
+              parts: [{ text }],
+            };
+            callbacks.onUpdate();
+          }
         }
       }
 
