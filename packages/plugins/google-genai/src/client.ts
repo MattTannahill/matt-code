@@ -7,7 +7,7 @@ import {
 } from '@google/genai';
 import { Client, ConversationItem, Tool } from 'matt-code-api';
 
-const MODEL_NAME = 'gemini-2.5-flash';
+const MODEL_NAME = 'gemini-3-flash-preview';
 
 export class GoogleGenAIClient implements Client {
   private client: GoogleGenAI;

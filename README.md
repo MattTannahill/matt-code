@@ -4,6 +4,8 @@
 
 An extensible, AI-powered, command-line coding assistant.
 
+![](screenshot.png)
+
 ## Design
 
 ### Plugins
