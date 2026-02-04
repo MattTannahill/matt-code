@@ -1,4 +1,5 @@
 .DS_Store
+.vscode
 *.tsbuildinfo
 dist
 lib
