@@ -10,7 +10,7 @@ const googleGenAIFactory: ClientFactory = {
 };
 
 const clientProvider: ClientFactoryProvider = {
-  fetch: async () => ({ "ai.models.generateContent": googleGenAIFactory }),
+  fetch: async () => ({ "/v1beta/models/generateContent": googleGenAIFactory }),
 };
 
 export default clientProvider;
