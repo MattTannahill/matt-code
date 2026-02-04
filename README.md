@@ -48,14 +48,20 @@ npm run build
 
 ## Usage
 
-Create a client
-```
+### Create a client
+The OpenAI client is built in to the CLI.  This can be used to connect to Ollama.
+
+> Other clients can be added via plugins.  For example, Gemini support can be added by installing the Google GenAI plugin.
+> 
+> `packages/cli/bin/run.js plugins link $pwd/packages/plugins/google-genai`
+
+```bash
 packages/cli/bin/run.js clients create ollama-openai \
     --type='openai:/v1/chat/completions' \
     --options='{"apiKey": "ollama", "baseURL": "http://localhost:11434/v1"}'
 ```
 
-Start TUI session
+### Start TUI session
 ```bash
 packages/cli/bin/run.js 
 ```
