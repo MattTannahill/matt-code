@@ -47,8 +47,17 @@ npm run build
 ```
 
 ## Usage
+
+Create a client
+```
+packages/cli/bin/run.js clients create ollama-openai \
+    --type='openai:/v1/chat/completions' \
+    --options='{"apiKey": "ollama", "baseURL": "http://localhost:11434/v1"}'
+```
+
+Start TUI session
 ```bash
-npm start
+packages/cli/bin/run.js 
 ```
 
 ## Acknowlegements
