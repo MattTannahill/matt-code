@@ -1,13 +1,16 @@
 import {
-  GoogleGenAI,
-  FunctionDeclaration,
   Content,
-  Type,
+  FunctionDeclaration,
+  FunctionResponse,
+  GoogleGenAI,
+  Part,
   Schema,
+  Type,
 } from '@google/genai';
-import { Client, ConversationItem, Tool } from 'matt-code-api';
+import { Client, Tool } from 'matt-code-api';
 
-const MODEL_NAME = 'gemini-3-flash-preview';
+// const MODEL_NAME = 'gemini-3-flash-preview';
+const MODEL_NAME = 'gemini-2.5-flash';
 
 export class GoogleGenAIClient implements Client {
   private client: GoogleGenAI;
@@ -18,51 +21,18 @@ export class GoogleGenAIClient implements Client {
     this.client = new GoogleGenAI({ apiKey });
   }
 
-  getConversation(): ConversationItem[] {
-    return this.history.map(item => {
-      const part = item.parts?.[0];
-      if (!part) return { role: 'user', content: '' };
-
-      if (part.text !== undefined) {
-        return {
-          role: item.role === 'model' ? 'assistant' : 'user',
-          content: part.text,
-        };
-      }
-
-      if (part.functionCall) {
-        return {
-          role: 'assistant',
-          content: `Using tool: ${part.functionCall.name}(${JSON.stringify(part.functionCall.args)})`,
-        };
-      }
-
-      if (part.functionResponse) {
-        return {
-          role: 'tool',
-          content: typeof part.functionResponse.response === 'string' 
-            ? part.functionResponse.response 
-            : JSON.stringify(part.functionResponse.response?.content),
-        };
-      }
-
-      return { role: 'user', content: '' };
-    });
-  }
-
   async run(
     userMessage: string,
     tools: Tool[],
     callbacks: {
-      executeTool: (name: string, args: string) => Promise<string>;
-      onUpdate: () => void;
+      onToolCall: (name: string, args: string) => Promise<string>;
+      onChunk?: (chunk: string) => void;
     },
   ): Promise<void> {
     this.history.push({
       role: 'user',
       parts: [{ text: userMessage }],
     });
-    callbacks.onUpdate();
 
     const functionDeclarations: FunctionDeclaration[] = tools.map(tool => ({
       name: tool.name,
@@ -79,64 +49,51 @@ export class GoogleGenAIClient implements Client {
         },
       });
 
-      let text = '';
-      let functionCall: any | undefined;
-
-      // Temporary placeholder for streaming updates
-      const tempHistoryItemIndex = this.history.length;
-      this.history.push({ role: 'model', parts: [{ text: '' }] });
+      const collectedParts: Part[] = [];
+      const toolCallPromises: Promise<{ functionResponse: FunctionResponse }>[] = [];
 
       for await (const chunk of resultStream) {
-        const functionCalls = chunk.functionCalls;
-        if (functionCalls && functionCalls.length > 0) {
-          functionCall = functionCalls[0];
-        } else {
-          const chunkText = chunk.text;
-          if (chunkText) {
-            text += chunkText;
-            // Update the last item in history for real-time feedback
-            this.history[tempHistoryItemIndex] = {
-              role: 'model',
-              parts: [{ text }],
-            };
-            callbacks.onUpdate();
+        const candidate = chunk.candidates?.[0];
+        if (!candidate) break;
+
+        const parts = candidate.content?.parts;
+        if (parts) {
+          for (const part of parts) {
+            collectedParts.push(part);
+            if (part.text) {
+              callbacks.onChunk?.(part.text);
+            }
+            if (part.functionCall) {
+              const call = part.functionCall;
+              const promise = callbacks.onToolCall(
+                call.name,
+                JSON.stringify(call.args),
+              ).then(result => ({
+                functionResponse: {
+                  name: call.name,
+                  response: { content: result },
+                },
+              }));
+              toolCallPromises.push(promise);
+            }
           }
         }
       }
 
-      // Remove the temporary streaming item
-      this.history.pop();
-
-      if (functionCall) {
+      if (collectedParts.length > 0) {
         this.history.push({
           role: 'model',
-          parts: [{ functionCall: functionCall }],
+          parts: collectedParts,
         });
-        callbacks.onUpdate();
+      }
 
-        const toolResult = await callbacks.executeTool(
-          functionCall.name,
-          JSON.stringify(functionCall.args),
-        );
-
+      if (toolCallPromises.length > 0) {
+        const functionResponses = await Promise.all(toolCallPromises);
         this.history.push({
           role: 'user',
-          parts: [
-            {
-              functionResponse: {
-                name: functionCall.name,
-                response: { content: toolResult },
-              },
-            },
-          ],
+          parts: functionResponses,
         });
-        callbacks.onUpdate();
       } else {
-        this.history.push({
-          role: 'model',
-          parts: [{ text }],
-        });
-        callbacks.onUpdate();
         break;
       }
     }

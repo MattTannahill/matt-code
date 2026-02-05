@@ -1,5 +1,5 @@
 import { Config } from '@oclif/core';
-import { Client, ClientFactoryProvider, Tool, ToolProvider } from 'matt-code-api';
+import { Client, ClientFactoryProvider, ConversationItem, Tool, ToolProvider } from 'matt-code-api';
 import * as fs from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -9,6 +9,8 @@ export type SessionOptions = {
 };
 
 export class Session {
+  private conversation: ConversationItem[] = [];
+
   constructor(
     private client: Client,
     private tools: Tool[],
@@ -16,28 +18,53 @@ export class Session {
   ) {}
 
   getConversation() {
-    return this.client.getConversation();
+    return this.conversation;
   }
 
   async run(input: string) {
+    this.conversation.push({ content: input, role: 'user' });
+    this.options.onUpdate?.();
+
     const executeTool = async (name: string, args: string) => {
+      this.conversation.push({ content: `Calling ${name} (args: ${args})`, role: 'tool' });
+      this.options.onUpdate?.();
+
       const tool = this.tools.find(t => t.name === name);
       if (!tool) {
-        return `Error: Unknown tool ${name}`;
+        const errorMsg = `Error: Unknown tool ${name}`;
+        this.conversation.push({ content: errorMsg, role: 'tool' });
+        this.options.onUpdate?.();
+        return errorMsg;
       }
 
       try {
         const parsedArgs = JSON.parse(args);
-        return await tool.run(parsedArgs);
+        const result = await tool.run(parsedArgs);
+        this.conversation.push({ content: result, role: 'tool' });
+        this.options.onUpdate?.();
+        return result;
       } catch (error) {
-        return `Error: ${error instanceof Error ? error.message : String(error)}`;
+        const errorMsg = `Error: ${error instanceof Error ? error.message : String(error)}`;
+        this.conversation.push({ content: errorMsg, role: 'tool' });
+        this.options.onUpdate?.();
+        return errorMsg;
       }
     };
 
     await this.client.run(input, this.tools, { 
-      executeTool, 
-      onUpdate: this.options.onUpdate 
+      onToolCall: executeTool, 
+      onChunk: (chunk) => {
+        let lastItem = this.conversation[this.conversation.length - 1];
+        if (!lastItem || lastItem.role !== 'assistant') {
+          lastItem = { content: '', role: 'assistant' };
+          this.conversation.push(lastItem);
+        }
+        lastItem.content = (lastItem.content || '') + chunk;
+        this.options.onUpdate?.();
+      } 
     });
+
+    this.options.onUpdate?.();
   }
 }
 

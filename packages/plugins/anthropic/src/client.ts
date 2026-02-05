@@ -11,64 +11,15 @@ export class AnthropicClient implements Client {
     this.client = new Anthropic(options);
   }
 
-  getConversation(): ConversationItem[] {
-    const conversation: ConversationItem[] = [];
-    for (const message of this.messages) {
-      if (!message) continue;
-      const {role} = message;
-      const {content} = message;
-
-      if (role === 'user') {
-        if (typeof content === 'string') {
-          conversation.push({ content, role: 'user' });
-        } else if (Array.isArray(content)) {
-          // tool results
-          conversation.push({
-            content: (content as Anthropic.ToolResultBlockParam[])
-              /* eslint-disable-next-line camelcase */
-              .map(c => `Tool output for ${c.tool_use_id}:\n${c.content}`)
-              .join('\n\n'),
-            role: 'tool',
-          });
-        }
-      } else if (role === 'assistant') {
-        if (typeof content === 'string') {
-          conversation.push({ content, role: 'assistant' });
-        } else if (Array.isArray(content)) {
-          const textPart = content.find(p => p.type === 'text');
-          if (textPart) {
-            conversation.push({ content: textPart.text, role: 'assistant' });
-          }
-
-          const toolParts = content.filter(p => p.type === 'tool_use');
-          if (toolParts.length > 0) {
-            conversation.push({
-              content: toolParts
-                .map(p => `Using tool: ${p.name}(${JSON.stringify(p.input)})`)
-                .join('\n'),
-              role: 'assistant',
-            });
-          }
-        } else {
-          // null content during streaming
-          conversation.push({ content: '', role: 'assistant' });
-        }
-      }
-    }
-
-    return conversation;
-  }
-
   async run(
     userMessage: string,
     tools: Tool[],
     callbacks: {
-      executeTool: (name: string, args: string) => Promise<string>;
-      onUpdate: () => void;
+      onToolCall: (name: string, args: string) => Promise<string>;
+      onChunk?: (chunk: string) => void;
     },
   ): Promise<void> {
     this.messages.push({ content: userMessage, role: 'user' });
-    callbacks.onUpdate();
 
     /* eslint-disable no-await-in-loop */
     while (true) {
@@ -94,7 +45,6 @@ export class AnthropicClient implements Client {
         role: 'assistant',
       };
       this.messages.push(assistantMessage);
-      callbacks.onUpdate();
 
       let textContent = '';
       const toolUses: { id: string; input: string; name: string; type: 'tool_use' }[] = 
@@ -123,6 +73,7 @@ export class AnthropicClient implements Client {
             toolUses[currentToolCall.index].input = currentToolCall.arguments;
           } else if (event.delta.type === 'text_delta') {
             textContent += event.delta.text;
+            callbacks.onChunk?.(event.delta.text);
           }
         } else if (event.type === 'content_block_stop') {
           currentToolCall = null;
@@ -142,14 +93,12 @@ export class AnthropicClient implements Client {
         } else {
           assistantMessage.content = contentParts;
         }
-
-        callbacks.onUpdate();
       }
 
       if (toolUses.length > 0) {
         const toolResponseContents = await Promise.all(
           toolUses.map(async toolCall => {
-            const toolOutput = await callbacks.executeTool(
+            const toolOutput = await callbacks.onToolCall(
               toolCall.name,
               toolCall.input,
             );
@@ -165,10 +114,9 @@ export class AnthropicClient implements Client {
           content: toolResponseContents,
           role: 'user',
         });
-        callbacks.onUpdate();
         // and loop...
       } else {
-        break; // exit loop
+        break;
       }
     }
   }

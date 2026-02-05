@@ -11,79 +11,15 @@ export class OpenAIClient implements Client {
     this.client = new OpenAI(options);
   }
 
-  getConversation(): ConversationItem[] {
-    const conversation: ConversationItem[] = [];
-    for (const message of this.messages) {
-      switch (message.role) {
-      case 'assistant': {
-        let {content} = message;
-        if (Array.isArray(content)) {
-          content = content
-            .map(c => {
-              if (c.type === 'text') return c.text;
-              return '';
-            })
-            .join('');
-        }
-
-        content = content || '';
-
-        /* eslint-disable camelcase */
-        if (message.tool_calls) {
-          const toolCallContent = message.tool_calls
-            .map(tc => {
-              if (tc.type === 'function') {
-                return `Using tool: ${tc.function.name}(${tc.function.arguments})`;
-              }
-
-              return `Using tool: ${tc.type}`;
-            })
-            .join('\n');
-          if (typeof content === 'string') {
-            content += '\n' + toolCallContent;
-          } else {
-            content = toolCallContent;
-          }
-        }
-        /* eslint-enable camelcase */
-
-        conversation.push({ content, role: 'assistant' });
-      
-      break;
-      }
-
-      case 'tool': {
-        conversation.push({
-          /* eslint-disable camelcase */
-          content: `Tool output for ${message.tool_call_id}:\n${message.content}`,
-          role: 'tool',
-        });
-      
-      break;
-      }
-
-      case 'user': {
-        conversation.push({ content: message.content as string, role: 'user' });
-      
-      break;
-      }
-      // No default
-      }
-    }
-
-    return conversation;
-  }
-
   async run(
     userMessage: string,
     tools: Tool[],
     callbacks: {
-      executeTool: (name: string, args: string) => Promise<string>;
-      onUpdate: () => void;
+      onToolCall: (name: string, args: string) => Promise<string>;
+      onChunk?: (chunk: string) => void;
     },
   ): Promise<void> {
     this.messages.push({ content: userMessage, role: 'user' });
-    callbacks.onUpdate();
 
     /* eslint-disable no-await-in-loop */
     while (true) {
@@ -106,7 +42,6 @@ export class OpenAIClient implements Client {
       const assistantMessage: OpenAI.Chat.Completions.ChatCompletionMessageParam =
         { content: null, role: 'assistant' };
       this.messages.push(assistantMessage);
-      callbacks.onUpdate();
 
       let textContent = '';
       const toolCallStreams: {
@@ -120,6 +55,7 @@ export class OpenAIClient implements Client {
         if (delta?.content) {
           textContent += delta.content;
           assistantMessage.content = textContent;
+          callbacks.onChunk?.(delta.content);
         }
 
         if (delta?.tool_calls) {
@@ -136,8 +72,6 @@ export class OpenAIClient implements Client {
             type: 'function',
           }));
         }
-
-        callbacks.onUpdate();
       }
 
       const finalToolCalls = toolCallStreams.map(tc => ({
@@ -152,7 +86,7 @@ export class OpenAIClient implements Client {
       if (finalToolCalls.length > 0) {
         const toolResponses = await Promise.all(
           finalToolCalls.map(async toolCall => {
-            const content = await callbacks.executeTool(
+            const content = await callbacks.onToolCall(
               toolCall.function.name,
               toolCall.function.arguments,
             );
@@ -165,7 +99,6 @@ export class OpenAIClient implements Client {
           }),
         );
         this.messages.push(...toolResponses);
-        callbacks.onUpdate();
         // Continue the loop to send tool responses back to the model
       } else {
         // No more tool calls, so we can exit the loop
