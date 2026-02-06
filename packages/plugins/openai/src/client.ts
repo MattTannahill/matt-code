@@ -1,4 +1,4 @@
-import { Client, ConversationItem, Tool } from 'matt-code-api';
+import { Client, Tool } from 'matt-code-api';
 import OpenAI from 'openai';
 
 const MODEL_NAME = 'qwen3-coder:30b';

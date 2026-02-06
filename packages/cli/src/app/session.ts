@@ -1,52 +1,57 @@
 import { Config } from '@oclif/core';
-import { Client, ClientFactoryProvider, ConversationItem, Tool, ToolProvider } from 'matt-code-api';
+import { Client, ClientFactoryProvider, Tool, ToolProvider } from 'matt-code-api';
 import * as fs from 'node:fs/promises';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
 
-export type SessionOptions = {
-  onUpdate?: () => void;
+import { ConversationItem } from './conversation-item.js';
+
+export type SessionRunCallbacks = {
+  onMessage: (item: ConversationItem) => void;
+  onChunk: (chunk: string) => void;
 };
 
 export class Session {
-  private conversation: ConversationItem[] = [];
-
   constructor(
     private client: Client,
-    private tools: Tool[],
-    private options: SessionOptions
+    private tools: Tool[]
   ) {}
 
-  getConversation() {
-    return this.conversation;
-  }
+  async run(input: string, callbacks: SessionRunCallbacks) {
+    const { onMessage, onChunk } = callbacks;
 
-  async run(input: string) {
-    this.conversation.push({ content: input, role: 'user' });
-    this.options.onUpdate?.();
+    // User Message
+    onMessage({ content: input, role: 'user' });
+
+    let assistantContent = '';
+
+    const flushAssistant = () => {
+      if (assistantContent) {
+        onMessage({ content: assistantContent, role: 'assistant' });
+        assistantContent = '';
+      }
+    };
 
     const executeTool = async (name: string, args: string) => {
-      this.conversation.push({ content: `Calling ${name} (args: ${args})`, role: 'tool' });
-      this.options.onUpdate?.();
+      flushAssistant();
+      
+      onMessage({ content: `Calling ${name} (args: ${args})`, role: 'tool' });
 
       const tool = this.tools.find(t => t.name === name);
       if (!tool) {
         const errorMsg = `Error: Unknown tool ${name}`;
-        this.conversation.push({ content: errorMsg, role: 'tool' });
-        this.options.onUpdate?.();
+        onMessage({ content: errorMsg, role: 'tool' });
         return errorMsg;
       }
 
       try {
         const parsedArgs = JSON.parse(args);
         const result = await tool.run(parsedArgs);
-        this.conversation.push({ content: result, role: 'tool' });
-        this.options.onUpdate?.();
+        onMessage({ content: result, role: 'tool' });
         return result;
       } catch (error) {
         const errorMsg = `Error: ${error instanceof Error ? error.message : String(error)}`;
-        this.conversation.push({ content: errorMsg, role: 'tool' });
-        this.options.onUpdate?.();
+        onMessage({ content: errorMsg, role: 'tool' });
         return errorMsg;
       }
     };
@@ -54,24 +59,19 @@ export class Session {
     await this.client.run(input, this.tools, { 
       onToolCall: executeTool, 
       onChunk: (chunk) => {
-        let lastItem = this.conversation[this.conversation.length - 1];
-        if (!lastItem || lastItem.role !== 'assistant') {
-          lastItem = { content: '', role: 'assistant' };
-          this.conversation.push(lastItem);
-        }
-        lastItem.content = (lastItem.content || '') + chunk;
-        this.options.onUpdate?.();
+        assistantContent += chunk;
+        onChunk(chunk);
       } 
     });
 
-    this.options.onUpdate?.();
+    flushAssistant();
   }
 }
 
 export class SessionFactory {
   constructor(private config: Config) {}
 
-  async createSession(options: SessionOptions): Promise<Session> {
+  async createSession(): Promise<Session> {
     const loadedTools: Tool[] = [];
     let loadedClient: Client | null = null;
     let clientConfig: null | { config: Record<string, unknown>; id: string; } = null;
@@ -133,6 +133,6 @@ export class SessionFactory {
       throw new Error(`Could not find or create client of type: ${clientConfig.config.type}`);
     }
 
-    return new Session(loadedClient, loadedTools, options);
+    return new Session(loadedClient, loadedTools);
   }
 }

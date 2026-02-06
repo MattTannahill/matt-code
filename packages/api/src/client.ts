@@ -1,4 +1,3 @@
-import { ConversationItem } from './conversation-item.js';
 import { Tool } from './tool.js';
 
 export interface Client {

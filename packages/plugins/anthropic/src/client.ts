@@ -1,5 +1,5 @@
 import Anthropic from '@anthropic-ai/sdk';
-import { Client, ConversationItem, Tool } from 'matt-code-api';
+import { Client, Tool } from 'matt-code-api';
 
 const MODEL_NAME = 'qwen3-coder:30b';
 
