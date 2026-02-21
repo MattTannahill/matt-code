@@ -1,0 +1,23 @@
+{
+  "name": "matt-code-yolo-bash",
+  "description": "Directly execute bash commands on the host system",
+  "version": "0.0.0",
+  "author": "Matt Tannahill",
+  "dependencies": {
+    "matt-code-api": "0.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18",
+    "typescript": "^5.9.3"
+  },
+  "exports": "./lib/index.js",
+  "files": [
+    "./lib"
+  ],
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b",
+    "clean": "rm -rf lib tsconfig.tsbuildinfo"
+  },
+  "types": "./lib/index.d.ts"
+}
