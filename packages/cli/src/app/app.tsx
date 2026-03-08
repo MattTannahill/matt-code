@@ -40,8 +40,11 @@ const ConversationItemView = ({ item }: { item: ConversationItem }) => (
 const PromptGlyph = ({ isRunning, phase = 0 }: { isRunning: boolean; phase?: number }) => (
   <Text>
     {PROMPT_GLYPH.map((character, index) => {
+      const currentColorIndex = Math.floor(phase / PROMPT_GLYPH.length) % BRAND_SIGNAL_GRADIENT.length;
+      const nextColorIndex = (currentColorIndex + 1) % BRAND_SIGNAL_GRADIENT.length;
+      const transitionWidth = phase % PROMPT_GLYPH.length;
       const color = isRunning
-        ? BRAND_SIGNAL_GRADIENT[(index + phase) % BRAND_SIGNAL_GRADIENT.length]
+        ? BRAND_SIGNAL_GRADIENT[index < transitionWidth ? nextColorIndex : currentColorIndex]
         : YELLOW;
 
       return (
@@ -163,7 +166,7 @@ export const App = ({ sessionFactory }: AppProps) => {
             <PromptGlyph isRunning phase={promptPhase} />
           </Box>
           <Box>
-            <Text dimColor>Thinking</Text>
+            <Text dimColor>Thinking...</Text>
           </Box>
         </Box>
       ) : (
