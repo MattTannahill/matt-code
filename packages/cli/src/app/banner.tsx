@@ -22,7 +22,6 @@ export const Banner: React.FC<BannerProps> = ({ packageVersion }) => (
     <Box flexDirection='column'>
       <Text bold color={BLUE}>MATT CODE</Text>
       <Text bold color={RED}>v{packageVersion}</Text>
-      {/* <Gradient colors={['#d83520', '#c82473', '#952052']}><Text>v{packageJson.version}</Text></Gradient> */}
     </Box>
   </Box>
 );

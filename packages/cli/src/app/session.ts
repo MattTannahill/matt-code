@@ -11,60 +11,96 @@ export type SessionRunCallbacks = {
   onChunk: (chunk: string) => void;
 };
 
+type SessionRunningListener = (isRunning: boolean) => void;
+
 export class Session {
+  private isSessionRunning = false;
+  private readonly runningListeners = new Set<SessionRunningListener>();
+
   constructor(
     private client: Client,
     private tools: Tool[]
   ) {}
 
   async run(input: string, callbacks: SessionRunCallbacks) {
+    if (this.isSessionRunning) {
+      throw new Error('Session is already running.');
+    }
+
+    this.setIsRunning(true);
+
     const { onMessage, onChunk } = callbacks;
 
-    // User Message
-    onMessage({ content: input, role: 'user' });
+    try {
+      // User Message
+      onMessage({ content: input, role: 'user' });
 
-    let assistantContent = '';
+      let assistantContent = '';
 
-    const flushAssistant = () => {
-      if (assistantContent) {
-        onMessage({ content: assistantContent, role: 'assistant' });
-        assistantContent = '';
-      }
-    };
+      const flushAssistant = () => {
+        if (assistantContent) {
+          onMessage({ content: assistantContent, role: 'assistant' });
+          assistantContent = '';
+        }
+      };
 
-    const executeTool = async (name: string, args: string) => {
+      const executeTool = async (name: string, args: string) => {
+        flushAssistant();
+
+        onMessage({ content: `Calling ${name} (args: ${args})`, role: 'tool' });
+
+        const tool = this.tools.find(t => t.name === name);
+        if (!tool) {
+          const errorMsg = `Error: Unknown tool ${name}`;
+          onMessage({ content: errorMsg, role: 'tool' });
+          return errorMsg;
+        }
+
+        try {
+          const parsedArgs = JSON.parse(args);
+          const result = await tool.run(parsedArgs);
+          onMessage({ content: result, role: 'tool' });
+          return result;
+        } catch (error) {
+          const errorMsg = `Error: ${error instanceof Error ? error.message : String(error)}`;
+          onMessage({ content: errorMsg, role: 'tool' });
+          return errorMsg;
+        }
+      };
+
+      await this.client.run(input, this.tools, {
+        onToolCall: executeTool,
+        onChunk: (chunk) => {
+          assistantContent += chunk;
+          onChunk(chunk);
+        }
+      });
+
       flushAssistant();
-      
-      onMessage({ content: `Calling ${name} (args: ${args})`, role: 'tool' });
+    } finally {
+      this.setIsRunning(false);
+    }
+  }
 
-      const tool = this.tools.find(t => t.name === name);
-      if (!tool) {
-        const errorMsg = `Error: Unknown tool ${name}`;
-        onMessage({ content: errorMsg, role: 'tool' });
-        return errorMsg;
-      }
+  isRunning() {
+    return this.isSessionRunning;
+  }
 
-      try {
-        const parsedArgs = JSON.parse(args);
-        const result = await tool.run(parsedArgs);
-        onMessage({ content: result, role: 'tool' });
-        return result;
-      } catch (error) {
-        const errorMsg = `Error: ${error instanceof Error ? error.message : String(error)}`;
-        onMessage({ content: errorMsg, role: 'tool' });
-        return errorMsg;
-      }
+  onRunning(listener: SessionRunningListener) {
+    this.runningListeners.add(listener);
+    listener(this.isSessionRunning);
+
+    return () => {
+      this.runningListeners.delete(listener);
     };
+  }
 
-    await this.client.run(input, this.tools, { 
-      onToolCall: executeTool, 
-      onChunk: (chunk) => {
-        assistantContent += chunk;
-        onChunk(chunk);
-      } 
-    });
+  private setIsRunning(isRunning: boolean) {
+    this.isSessionRunning = isRunning;
 
-    flushAssistant();
+    for (const listener of this.runningListeners) {
+      listener(isRunning);
+    }
   }
 }
 

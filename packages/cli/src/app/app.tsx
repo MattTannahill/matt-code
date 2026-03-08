@@ -4,13 +4,15 @@ import { useEffect, useState } from 'react';
 
 import packageJson from '../../package.json' with { type: 'json' };
 import { Banner } from './banner.js';
-import { BLUE, YELLOW } from './colors.js';
+import { BLUE, BRAND_SIGNAL_GRADIENT, YELLOW } from './colors.js';
 import { ConversationItem } from './conversation-item.js';
 import { Session, SessionFactory } from './session.js';
 
 type AppProps = {
   sessionFactory: SessionFactory;
 };
+
+const PROMPT_GLYPH = [']', '\\', '/', '['];
 
 const ConversationItemView = ({ item }: { item: ConversationItem }) => (
   <Box
@@ -35,11 +37,28 @@ const ConversationItemView = ({ item }: { item: ConversationItem }) => (
   </Box>
 );
 
+const PromptGlyph = ({ isRunning, phase = 0 }: { isRunning: boolean; phase?: number }) => (
+  <Text>
+    {PROMPT_GLYPH.map((character, index) => {
+      const color = isRunning
+        ? BRAND_SIGNAL_GRADIENT[(index + phase) % BRAND_SIGNAL_GRADIENT.length]
+        : YELLOW;
+
+      return (
+        <Text key={`${character}-${index}`} color={color}>
+          {character}
+        </Text>
+      );
+    })}
+  </Text>
+);
+
 export const App = ({ sessionFactory }: AppProps) => {
   const [session, setSession] = useState<Session | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [message, setMessage] = useState('');
   const [isRunning, setIsRunning] = useState(false);
+  const [promptPhase, setPromptPhase] = useState(0);
   const [staticItems, setStaticItems] = useState<ConversationItem[]>([]);
   const [streamingContent, setStreamingContent] = useState('');
   const [bannerRendered, setBannerRendered] = useState(false);
@@ -57,10 +76,30 @@ export const App = ({ sessionFactory }: AppProps) => {
     init();
   }, []);
 
-  const handleSubmit = async (value: string) => {
+  useEffect(() => {
     if (!session) return;
+
+    return session.onRunning(setIsRunning);
+  }, [session]);
+
+  useEffect(() => {
+    if (!isRunning) {
+      setPromptPhase(0);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      setPromptPhase((previous) => previous + 1);
+    }, 120);
+
+    return () => clearInterval(interval);
+  }, [isRunning]);
+
+  const handleSubmit = async (value: string) => {
+    if (!session || session.isRunning() || !value.trim()) return;
+
     setMessage('');
-    setIsRunning(true);
+
     try {
       await session.run(value, {
         onMessage: (item) => {
@@ -71,8 +110,16 @@ export const App = ({ sessionFactory }: AppProps) => {
           setStreamingContent(prev => prev + chunk);
         }
       });
+    } catch (e: any) {
+      setStaticItems(prev => [
+        ...prev,
+        {
+          content: `Error: ${e?.message || String(e)}`,
+          role: 'assistant',
+        },
+      ]);
     } finally {
-      setIsRunning(false);
+      setStreamingContent('');
     }
   };
 
@@ -110,19 +157,30 @@ export const App = ({ sessionFactory }: AppProps) => {
         <ConversationItemView item={{ role: 'assistant', content: streamingContent }} />
       )}
 
-      <Box borderColor={YELLOW} borderStyle="singleDouble" paddingX={1}>
-        <Box marginRight={2}>
-          <Text color={YELLOW}>]\/[</Text>
+      {isRunning ? (
+        <Box borderColor={YELLOW} borderStyle="singleDouble" paddingX={1}>
+          <Box marginRight={2}>
+            <PromptGlyph isRunning phase={promptPhase} />
+          </Box>
+          <Box>
+            <Text dimColor>Thinking</Text>
+          </Box>
         </Box>
-        <Box>
-          <TextInput
-            onChange={setMessage}
-            onSubmit={handleSubmit}
-            placeholder="What would you like to do today?"
-            value={message}
-          />
+      ) : (
+        <Box borderColor={YELLOW} borderStyle="singleDouble" paddingX={1}>
+          <Box marginRight={2}>
+            <PromptGlyph isRunning={false} />
+          </Box>
+          <Box>
+            <TextInput
+              onChange={setMessage}
+              onSubmit={handleSubmit}
+              placeholder="What would you like to do today?"
+              value={message}
+            />
+          </Box>
         </Box>
-      </Box>
+      )}
     </Box>
   );
 };
